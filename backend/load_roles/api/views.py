@@ -16,6 +16,13 @@ class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
     
+    def get_permissions(self):
+        user = self.request.user
+        
+        if self.action == 'create':
+            return [IsAuthenticated(), IsManager()]
+        return [IsAuthenticated()]
+    
     def get_queryset(self):
         user = self.request.user
         
