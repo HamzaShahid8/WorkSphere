@@ -15,7 +15,7 @@ class Task(models.Model):
     description = models.TextField()
     assigned_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_by')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by')
-    created_at = models.DateTimeField(auto_created=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
     def __str__(self):
