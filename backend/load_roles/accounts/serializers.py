@@ -1,4 +1,4 @@
-from .models import *
+from .models import User
 from rest_framework import serializers
 
 
@@ -24,7 +24,7 @@ class PublicSignupSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            role='employee',
+            role=User.ROLE_EMPLOYEE,
         )
         user.set_password(validated_data['password'])
         user.save()

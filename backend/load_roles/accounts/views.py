@@ -1,7 +1,6 @@
-from django.shortcuts import render
-from .serializers import *
-from .models import *
-from .permissions import *
+from .serializers import PublicSignupSerializer, RegisterSerializer
+from .models import User
+from .permissions import IsAdmin
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
@@ -40,6 +39,6 @@ class UserViewSet(viewsets.ModelViewSet):
     
     
     def perform_create(self, serializer):
-        if self.request.user.role != 'admin':
+        if self.request.user.role != User.ROLE_ADMIN:
             raise PermissionDenied('Only admin can create users')
         serializer.save()

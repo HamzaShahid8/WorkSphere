@@ -14,15 +14,12 @@ import ApiBlocked from '../components/common/ApiBlocked'
 import Loader from '../components/common/Loader'
 import StatCard from '../components/dashboard/StatCard'
 import { useAppState } from '../state/appState'
-import * as taskService from '../services/taskService'
+import * as dashboardService from '../services/dashboardService'
 import { isUnauthorizedError } from '../lib/api'
-import { computeSummaryTotals } from '../lib/helpers'
-
-const LABELS = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-}
+import {
+  formatStatusKey,
+  getSummaryMetricEntries,
+} from '../lib/helpers'
 
 export default function ReportsPage() {
   const { refreshNonce, triggerRefresh, setAuthHintFromError, markAuthOk, setActivePage } =
@@ -39,7 +36,7 @@ export default function ReportsPage() {
       setLoading(true)
       setBlocked(false)
       try {
-        const data = await taskService.getTaskSummary()
+        const data = await dashboardService.getDashboardSummary()
         if (cancelled) return
         markAuthOk()
         setSummary(data)
@@ -62,20 +59,21 @@ export default function ReportsPage() {
     }
   }, [refreshNonce, markAuthOk, setAuthHintFromError])
 
-  const totals = useMemo(() => computeSummaryTotals(summary), [summary])
+  const metrics = useMemo(() => getSummaryMetricEntries(summary), [summary])
+  const totalMetricsValue = useMemo(
+    () => metrics.reduce((sum, row) => sum + row.value, 0),
+    [metrics],
+  )
 
   const chartData = useMemo(() => {
-    if (!summary) return []
-    return ['pending', 'in_progress', 'completed'].map((k) => ({
-      name: LABELS[k],
-      key: k,
-      count: Number(summary[k]) || 0,
-      pct:
-        totals?.total
-          ? ((Number(summary[k]) || 0) / totals.total) * 100
-          : 0,
+    if (!metrics.length) return []
+    return metrics.map((row) => ({
+      name: formatStatusKey(row.key),
+      key: row.key,
+      count: row.value,
+      pct: totalMetricsValue ? (row.value / totalMetricsValue) * 100 : 0,
     }))
-  }, [summary, totals])
+  }, [metrics, totalMetricsValue])
 
   if (loading && !summary && !blocked) {
     return <Loader label="Loading reports…" />
@@ -86,7 +84,7 @@ export default function ReportsPage() {
       <div>
         <PageHeader
           title="Reports"
-          subtitle="Built from GET /api/task/summary/"
+          subtitle="Built from GET /api/dashboard/"
         />
         <ApiBlocked
           onRetry={triggerRefresh}
@@ -102,29 +100,19 @@ export default function ReportsPage() {
     <div>
       <PageHeader
         title="Reports"
-        subtitle="Counts and distribution from the task summary endpoint"
+        subtitle="Counts and distribution from dashboard summary metrics"
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total" value={totals?.total} loading={loading} blocked={false} />
-        <StatCard
-          title="Pending"
-          value={summary?.pending}
-          loading={loading}
-          blocked={false}
-        />
-        <StatCard
-          title="In progress"
-          value={summary?.in_progress}
-          loading={loading}
-          blocked={false}
-        />
-        <StatCard
-          title="Completed"
-          value={summary?.completed}
-          loading={loading}
-          blocked={false}
-        />
+        {metrics.map((metric) => (
+          <StatCard
+            key={metric.key}
+            title={formatStatusKey(metric.key)}
+            value={metric.value}
+            loading={loading}
+            blocked={false}
+          />
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -140,7 +128,7 @@ export default function ReportsPage() {
                 <span className="text-gray-600">
                   {row.count}{' '}
                   <span className="text-gray-400">
-                    ({totals?.total ? row.pct.toFixed(1) : '0.0'}%)
+                    ({totalMetricsValue ? row.pct.toFixed(1) : '0.0'}%)
                   </span>
                 </span>
               </li>

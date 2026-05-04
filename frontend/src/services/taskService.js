@@ -26,8 +26,3 @@ export async function updateTask(id, payload) {
 export async function deleteTask(id) {
   await apiClient.delete(`/api/task/${id}/`)
 }
-
-export async function getTaskSummary() {
-  const { data } = await apiClient.get('/api/task/summary/')
-  return data
-}

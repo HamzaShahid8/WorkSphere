@@ -8,11 +8,13 @@ import Loader from '../components/common/Loader'
 import { PAGE_KEYS } from '../config/constants'
 import { useAppState } from '../state/appState'
 import * as taskService from '../services/taskService'
+import * as dashboardService from '../services/dashboardService'
 import * as userService from '../services/userService'
 import { isUnauthorizedError } from '../lib/api'
 import {
   buildUserMap,
-  computeSummaryTotals,
+  formatStatusKey,
+  getSummaryMetricEntries,
   normalizeListResponse,
   sortTasksByCreatedAtDesc,
 } from '../lib/helpers'
@@ -41,7 +43,7 @@ export default function DashboardPage() {
       setBlocked(false)
       try {
         const [summaryData, taskData] = await Promise.all([
-          taskService.getTaskSummary(),
+          dashboardService.getDashboardSummary(),
           taskService.getTasks(),
         ])
         if (cancelled) return
@@ -80,7 +82,7 @@ export default function DashboardPage() {
     }
   }, [refreshNonce, markAuthOk, setAuthHintFromError])
 
-  const totals = useMemo(() => computeSummaryTotals(summary), [summary])
+  const metrics = useMemo(() => getSummaryMetricEntries(summary), [summary])
   const recent = useMemo(
     () => sortTasksByCreatedAtDesc(tasks).slice(0, 5),
     [tasks],
@@ -116,34 +118,19 @@ export default function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        subtitle="Live metrics from the task API and summary endpoint"
+        subtitle="Live metrics from the dashboard API with recent task activity"
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Total tasks"
-          value={totals?.total}
-          loading={loading}
-          blocked={false}
-        />
-        <StatCard
-          title="Pending"
-          value={summary != null ? summary.pending : null}
-          loading={loading}
-          blocked={false}
-        />
-        <StatCard
-          title="In progress"
-          value={summary != null ? summary.in_progress : null}
-          loading={loading}
-          blocked={false}
-        />
-        <StatCard
-          title="Completed"
-          value={summary != null ? summary.completed : null}
-          loading={loading}
-          blocked={false}
-        />
+        {metrics.map((metric) => (
+          <StatCard
+            key={metric.key}
+            title={formatStatusKey(metric.key)}
+            value={metric.value}
+            loading={loading}
+            blocked={false}
+          />
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

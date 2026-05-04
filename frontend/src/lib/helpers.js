@@ -49,15 +49,16 @@ export function normalizeListResponse(data) {
   return []
 }
 
-export function computeSummaryTotals(summary) {
-  if (!summary || typeof summary !== 'object') return null
-  const p = Number(summary.pending) || 0
-  const i = Number(summary.in_progress) || 0
-  const c = Number(summary.completed) || 0
-  return {
-    pending: p,
-    in_progress: i,
-    completed: c,
-    total: p + i + c,
-  }
+export function getSummaryMetricEntries(summary) {
+  if (!summary || typeof summary !== 'object') return []
+  return Object.entries(summary).map(([key, value]) => ({
+    key,
+    value: Number(value) || 0,
+  }))
+}
+
+export function formatStatusKey(key) {
+  return String(key || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (m) => m.toUpperCase())
 }
